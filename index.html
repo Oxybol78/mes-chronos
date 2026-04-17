@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f1117" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Mes Chronos" />
+  <title>Mes Chronométrages — Oxybol</title>
+  <style>
+    :root {
+      --bg:      #0f1117;
+      --card:    #1a1d27;
+      --card2:   #21253a;
+      --border:  #2d3148;
+      --accent:  #4f6ef7;
+      --text:    #e2e8f0;
+      --muted:   #8892a4;
+      --green:   #22c55e;
+      --yellow:  #f59e0b;
+      --orange:  #f97316;
+      --red:     #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ===== HEADER ===== */
+    .header {
+      background: linear-gradient(135deg, #1a1d27 0%, #21253a 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .header-left h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #4f6ef7, #7c3aed);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header-left p { color: var(--muted); font-size: 0.78rem; margin-top: 2px; }
+    .header-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    .live-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #14532d33; border: 1px solid #22c55e44;
+      color: var(--green); border-radius: 20px;
+      padding: 4px 10px; font-size: 0.75rem; font-weight: 600;
+    }
+    .live-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green);
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: .4; transform: scale(.7); }
+    }
+    .live-badge.error { background: #450a0a33; border-color: #ef444444; color: var(--red); }
+    .live-badge.error .live-dot { background: var(--red); animation: none; }
+
+    .btn {
+      background: var(--card2); border: 1px solid var(--border);
+      color: var(--text); padding: 6px 12px; border-radius: 8px;
+      font-size: 0.78rem; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 4px;
+      transition: background .2s, border-color .2s; text-decoration: none;
+    }
+    .btn:hover { background: #2d3148; border-color: var(--accent); }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    .last-update { color: var(--muted); font-size: 0.72rem; }
+
+    /* ===== STATS ===== */
+    .stats-bar {
+      display: flex; gap: 12px;
+      padding: 16px 20px; flex-wrap: wrap;
+    }
+    .stat-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px 16px;
+      min-width: 100px; flex: 1;
+    }
+    .stat-card .val { font-size: 1.8rem; font-weight: 700; line-height: 1; }
+    .stat-card .lbl {
+      color: var(--muted); font-size: 0.7rem; margin-top: 3px;
+      text-transform: uppercase; letter-spacing: .05em;
+    }
+    .stat-card.accent .val { color: var(--accent); }
+    .stat-card.green  .val { color: var(--green); }
+    .stat-card.orange .val { color: var(--orange); }
+
+    /* ===== EVENTS ===== */
+    .content { padding: 0 20px 60px; }
+
+    .month-group { margin-bottom: 28px; }
+    .month-header {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+    }
+    .month-name {
+      font-size: .82rem; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .08em; white-space: nowrap;
+    }
+    .month-line { flex: 1; height: 1px; background: var(--border); }
+
+    .event-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px 16px; margin-bottom: 8px;
+      display: flex; align-items: flex-start; gap: 14px;
+      transition: border-color .2s;
+    }
+    .event-card:active { border-color: var(--accent); }
+    .event-card.upcoming   { border-left: 3px solid var(--accent); }
+    .event-card.today-card { border-left: 3px solid var(--green); background: #1a2a1a; }
+
+    .event-date { min-width: 44px; text-align: center; flex-shrink: 0; }
+    .event-date .day { font-size: 1.35rem; font-weight: 700; line-height: 1; }
+    .event-date .mon { font-size: .65rem; color: var(--muted); text-transform: uppercase; }
+    .event-date .yr  { font-size: .6rem; color: var(--border); }
+
+    .vline { width: 1px; background: var(--border); align-self: stretch; flex-shrink: 0; }
+
+    .event-body { flex: 1; min-width: 0; }
+    .event-title-row {
+      display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+    }
+    .event-title { font-size: .92rem; font-weight: 600; }
+    .event-title a { color: inherit; text-decoration: none; }
+
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 2px 7px; border-radius: 10px;
+      font-size: .65rem; font-weight: 600;
+    }
+    .badge-valide  { background: #14532d; color: #4ade80; }
+    .badge-option  { background: #451a03; color: #fbbf24; }
+    .badge-ns      { background: #431407; color: #fb923c; }
+    .badge-annule  { background: #2e1065; color: #c084fc; }
+    .badge-perdu   { background: #450a0a; color: #f87171; }
+    .badge-reporte { background: #1c1c1c; color: #9ca3af; }
+
+    .flag {
+      font-size: .6rem; font-weight: 700;
+      padding: 2px 5px; border-radius: 4px;
+      text-transform: uppercase; letter-spacing: .05em;
+    }
+    .flag-today { background: var(--green);  color: #000; }
+    .flag-next  { background: var(--accent); color: #fff; }
+    .flag-soon  { background: #1e3a5f;       color: #60a5fa; }
+
+    .event-meta {
+      display: flex; gap: 5px; flex-wrap: wrap; margin-top: 7px;
+    }
+    .tag {
+      display: inline-flex; align-items: center; gap: 3px;
+      padding: 2px 7px; border-radius: 6px;
+      font-size: .65rem; font-weight: 500;
+    }
+    .tag-techno { background: #1e3a5f; color: #60a5fa; }
+    .tag-type   { background: #2d1b4e; color: #c084fc; }
+    .tag-mat    { background: #1c2a1a; color: #86efac; }
+    .event-range { color: var(--muted); font-size: .72rem; margin-top: 3px; }
+
+    /* ===== ETATS ===== */
+    .state-box {
+      margin: 24px 20px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 28px 22px; text-align: center;
+    }
+    .state-box.error-box { border-color: #ef444444; }
+    .state-box h2 { font-size: 1rem; margin-bottom: 10px; }
+    .state-box p  { color: var(--muted); font-size: .83rem; line-height: 1.7; }
+    .state-box .big-icon { font-size: 2rem; display: block; margin-bottom: 10px; }
+
+    .loading-spinner {
+      display: inline-block; width: 18px; height: 18px;
+      border: 2px solid var(--border); border-top-color: var(--accent);
+      border-radius: 50%; animation: spin .7s linear infinite;
+      vertical-align: middle; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .empty-msg { text-align: center; color: var(--muted); padding: 36px 0; }
+
+    /* Safe area iPhone */
+    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+      .content { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <h1>&#9201; Mes Chronos</h1>
+    <p>Christophe MARTIN — Oxybol</p>
+  </div>
+  <div class="header-right">
+    <div class="live-badge" id="liveBadge">
+      <span class="live-dot"></span>
+      <span id="liveLabel">Chargement…</span>
+    </div>
+    <button class="btn" id="btnRefresh" onclick="manualRefresh()">&#8635;</button>
+    <a class="btn" href="https://www.notion.so/5d07a861e0a143628a10d4ce61acad0c" target="_blank">Notion</a>
+  </div>
+</header>
+
+<div class="stats-bar" id="statsBar"></div>
+<div id="mainContent"></div>
+
+<script>
+// Sur Vercel : appels relatifs /api/notion
+// En local   : même logique (le fichier est servi depuis le même serveur)
+const API_URL = '/api/notion';
+const POLL_MS  = 60_000;
+
+// ── Utils ────────────────────────────────────────────────────────────────────
+const TODAY    = (() => { const d = new Date(); d.setHours(0,0,0,0); return d; })();
+const TODAYSTR = TODAY.toISOString().slice(0,10);
+const MONTHS_L = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const MONTHS_S = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+
+function parseDate(s) { return s ? new Date(s.slice(0,10)) : null; }
+function fDay(d)  { return d ? String(d.getDate()).padStart(2,'0') : '--'; }
+function fMon(d)  { return d ? MONTHS_S[d.getMonth()] : ''; }
+function fMonL(d) { return d ? MONTHS_L[d.getMonth()] : ''; }
+
+// ── Badges ───────────────────────────────────────────────────────────────────
+function statutBadge(s) {
+  const map = {
+    'Validé':              ['badge-valide',  'Validé'],
+    'Option':              ['badge-option',  'Option'],
+    'Validé non signé':    ['badge-ns',      'Non signé'],
+    'Annulé':              ['badge-annule',  'Annulé'],
+    'Perdu':               ['badge-perdu',   'Perdu'],
+    'Reporté':             ['badge-reporte', 'Reporté'],
+    'Déjà Client à relancer':              ['badge-option', 'À relancer'],
+    'Client relancé en attente de retour': ['badge-option', 'En attente'],
+  };
+  const [cls, lbl] = map[s] || ['badge-reporte', s || ''];
+  return `<span class="badge ${cls}">${lbl}</span>`;
+}
+function technoEmoji(t) {
+  return {Urtime:'⚡', Wiclax:'🔵', Gmcap:'🟡', Livetrail:'🟢'}[t] || '';
+}
+
+// ── Stats ────────────────────────────────────────────────────────────────────
+function renderStats(events) {
+  const upcoming = events.filter(e => { const d = parseDate(e.dateStart); return d && d >= TODAY; });
+  const next = upcoming[0];
+  let daysNext = '—';
+  if (next) {
+    const diff = Math.round((parseDate(next.dateStart) - TODAY) / 86400000);
+    daysNext = diff === 0 ? 'Auj.' : `J-${diff}`;
+  }
+  document.getElementById('statsBar').innerHTML = `
+    <div class="stat-card green">
+      <div class="val">${upcoming.length}</div>
+      <div class="lbl">À venir</div>
+    </div>
+    <div class="stat-card orange">
+      <div class="val">${daysNext}</div>
+      <div class="lbl">${next ? next['Evènement'] : 'Aucun'}</div>
+    </div>
+    <div class="stat-card accent">
+      <div class="val">${events.filter(e => e.Statut === 'Validé').length}</div>
+      <div class="lbl">Validés</div>
+    </div>
+    <div class="stat-card">
+      <div class="val">${events.filter(e => e.Statut === 'Option').length}</div>
+      <div class="lbl">Options</div>
+    </div>`;
+}
+
+// ── Events ───────────────────────────────────────────────────────────────────
+function renderEvents(events) {
+  const sorted = [...events].sort((a, b) => {
+    const da = parseDate(a.dateStart), db = parseDate(b.dateStart);
+    if (!da && !db) return 0; if (!da) return 1; if (!db) return -1;
+    return da - db;
+  });
+  if (!sorted.length)
+    return '<div class="content"><div class="empty-msg">Aucun prochain chronométrage.</div></div>';
+
+  const firstUp = sorted.find(e => { const d = parseDate(e.dateStart); return d && d >= TODAY; });
+  const groups  = new Map();
+  for (const e of sorted) {
+    const d   = parseDate(e.dateStart);
+    const key = d ? `${d.getFullYear()}-${String(d.getMonth()).padStart(2,'0')}` : 'zz';
+    if (!groups.has(key)) groups.set(key, { label: d ? `${fMonL(d)} ${d.getFullYear()}` : 'Date inconnue', events: [] });
+    groups.get(key).events.push(e);
+  }
+
+  let html = '<div class="content">';
+  for (const { label, events: grp } of groups.values()) {
+    html += `<div class="month-group">
+      <div class="month-header">
+        <span class="month-name">${label}</span><div class="month-line"></div>
+      </div>`;
+    for (const e of grp) {
+      const d    = parseDate(e.dateStart);
+      const dEnd = parseDate(e.dateEnd);
+      const ds   = d ? d.toISOString().slice(0,10) : '';
+      const isToday    = ds === TODAYSTR;
+      const isUpcoming = d && d > TODAY;
+      const isNext     = e === firstUp;
+
+      let cc = 'event-card';
+      if (isToday) cc += ' today-card'; else if (isUpcoming || isNext) cc += ' upcoming';
+
+      let flag = '';
+      if (isToday)         flag = '<span class="flag flag-today">Aujourd\'hui</span>';
+      else if (isNext)     flag = '<span class="flag flag-next">Prochain</span>';
+      else if (isUpcoming) flag = '<span class="flag flag-soon">À venir</span>';
+
+      let range = '';
+      if (dEnd && dEnd.toISOString().slice(0,10) !== ds)
+        range = `<div class="event-range">&#8594; ${fDay(dEnd)} ${fMon(dEnd)} ${dEnd.getFullYear()}</div>`;
+
+      const tTechno = (e.Techno     ||[]).map(t=>`<span class="tag tag-techno">${technoEmoji(t)} ${t}</span>`).join('');
+      const tType   = (e.TypeChrono ||[]).map(t=>`<span class="tag tag-type">${t}</span>`).join('');
+      const tMat    = (e.Matériel   ||[]).map(m=>`<span class="tag tag-mat">&#128295; ${m}</span>`).join('');
+
+      html += `
+      <div class="${cc}">
+        <div class="event-date">
+          <div class="day">${fDay(d)}</div>
+          <div class="mon">${fMon(d)}</div>
+          <div class="yr">${d ? d.getFullYear() : ''}</div>
+        </div>
+        <div class="vline"></div>
+        <div class="event-body">
+          <div class="event-title-row">
+            <span class="event-title">
+              ${e.url ? `<a href="${e.url}" target="_blank">${e['Evènement']}</a>` : e['Evènement']}
+            </span>
+            ${statutBadge(e.Statut)} ${flag}
+          </div>
+          ${range}
+          <div class="event-meta">${tTechno}${tType}${tMat}</div>
+        </div>
+      </div>`;
+    }
+    html += '</div>';
+  }
+  return html + '</div>';
+}
+
+// ── États ────────────────────────────────────────────────────────────────────
+function htmlLoading() {
+  return `<div class="state-box"><span class="big-icon"><span class="loading-spinner"></span></span>
+    <h2>Chargement…</h2></div>`;
+}
+function htmlError(msg) {
+  return `<div class="state-box error-box">
+    <span class="big-icon">&#9888;</span>
+    <h2 style="color:var(--red)">Erreur</h2>
+    <p>${msg}</p></div>`;
+}
+
+// ── Live badge ────────────────────────────────────────────────────────────────
+function setLive(ok, label) {
+  const b = document.getElementById('liveBadge');
+  b.classList.toggle('error', !ok);
+  b.querySelector('.live-dot').style.animation = ok ? '' : 'none';
+  document.getElementById('liveLabel').textContent = label;
+}
+
+// ── Fetch ────────────────────────────────────────────────────────────────────
+async function load(showLoading = false) {
+  if (showLoading) document.getElementById('mainContent').innerHTML = htmlLoading();
+  let json;
+  try {
+    const r = await fetch(API_URL, { cache: 'no-store' });
+    json = await r.json();
+  } catch {
+    setLive(false, 'Erreur réseau');
+    document.getElementById('statsBar').innerHTML = '';
+    document.getElementById('mainContent').innerHTML = htmlError('Impossible de contacter le serveur.');
+    return;
+  }
+  if (json.error) {
+    setLive(false, 'Erreur');
+    document.getElementById('statsBar').innerHTML = '';
+    document.getElementById('mainContent').innerHTML = htmlError(json.error);
+    return;
+  }
+  const events = json.events || [];
+  setLive(true, 'En direct');
+  document.getElementById('lastUpdate').textContent =
+    json.last_update ? `Mis à jour ${json.last_update}` : '';
+  renderStats(events);
+  document.getElementById('mainContent').innerHTML = renderEvents(events);
+}
+
+// ── Refresh manuel ────────────────────────────────────────────────────────────
+async function manualRefresh() {
+  const btn = document.getElementById('btnRefresh');
+  btn.disabled = true; btn.textContent = '⏳';
+  await load(false);
+  btn.disabled = false; btn.innerHTML = '&#8635;';
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+load(true);
+setInterval(() => load(false), POLL_MS);
+
+// Retour sur l'onglet / l'app (mobile)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') load(false);
+});
+</script>
+</body>
+</html>
